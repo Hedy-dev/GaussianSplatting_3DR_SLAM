@@ -22,10 +22,9 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     # start pose & gt pose
     # Гомогенная матрица преобразования из системы координат камеры в мировую систему координат
     gt_pose_c2w=icomma_info.gt_pose_c2w
-    # 
+    # Перемещение тензора start_pose_w2c, содержащего информацию о начальной позе камеры относительно мира, на устройство CUDA (if true)
     start_pose_w2c=icomma_info.start_pose_w2c.cuda()
-    
-    # query_image for comparing 
+    # Перемещение тензора query_image, содержащего информацию об изображении запроса
     query_image = icomma_info.query_image.cuda()
 
     # initialize camera pose object

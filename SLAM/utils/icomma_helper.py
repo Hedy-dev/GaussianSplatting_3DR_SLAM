@@ -14,49 +14,7 @@ def load_LoFTR(ckpt_path:str,temp_bug_fix:bool):
     LoFTR_model= LoFTR_model.eval().cuda()
     
     return LoFTR_model
-"""
-функция создает матрицу гомогенного преобразования для вращения вокруг 
-оси z на угол ψ, delta[2]/180.*np.pi
-"""
-rot_psi = lambda phi: np.array([
-        [1, 0, 0, 0],
-        [0, np.cos(phi), -np.sin(phi), 0],
-        [0, np.sin(phi), np.cos(phi), 0],
-        [0, 0, 0, 1]])
-"""
-функция создает матрицу гомогенного преобразования для вращения вокруг 
-оси y на угол θ, delta[1]/180.*np.pi
-"""
-rot_theta = lambda th: np.array([
-        [np.cos(th), 0, -np.sin(th), 0],
-        [0, 1, 0, 0],
-        [np.sin(th), 0, np.cos(th), 0],
-        [0, 0, 0, 1]])
 
-
-# TODO: заменить на обычные, а то капец
-"""
-функция создает матрицу гомогенного преобразования для вращения вокруг оси 
-x на угол ϕ, delta[0]/180.*np.pi
-"""
-rot_phi = lambda psi: np.array([
-        [np.cos(psi), -np.sin(psi), 0, 0],
-        [np.sin(psi), np.cos(psi), 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]])
-"""
-Функция создаёт гомогенную матрицу трансляции (смещение) в 3D-пространстве по осям
-x, y и z,
-где x, y, z = delta[3],delta[4],delta[5], а delta default="[30,10,10,0.1,0.1,0.1]"
-"""
-def trans_t_xyz(tx, ty, tz):
-    T = np.array([
-        [1, 0, 0, tx],
-        [0, 1, 0, ty],
-        [0, 0, 1, tz],
-        [0, 0, 0, 1]
-    ])
-    return T
 """
 R_c2w(3x3) — матрица вращения, которая преобразует координаты из системы координат камеры в мировую систему координат.
 T_w2c (3x1) — вектор трансляции, который преобразует координаты из мировой системы координат в систему координат камеры.
@@ -76,28 +34,41 @@ def combine_3dgs_rotation_translation(R_c2w, T_w2c):
 def create_transformation_matrix(delta):
     tx, ty, tz = delta[3], delta[4], delta[5]
     psi, theta, phi = delta[0] / 180. * np.pi, delta[1] / 180. * np.pi, delta[2] / 180. * np.pi
-
+    """
+    Функция создаёт гомогенную матрицу трансляции (смещение) в 3D-пространстве по осям
+    x, y и z,
+    где x, y, z = delta[3],delta[4],delta[5], а delta default="[30,10,10,0.1,0.1,0.1]"
+    """
     T = np.array([
         [1, 0, 0, tx],
         [0, 1, 0, ty],
         [0, 0, 1, tz],
         [0, 0, 0, 1]
     ])
-
+    """
+    функция создает матрицу гомогенного преобразования для вращения вокруг оси 
+    x на угол ϕ, delta[0]/180.*np.pi
+    """
     R_psi = np.array([
         [1, 0, 0, 0],
         [0, np.cos(phi), -np.sin(phi), 0],
         [0, np.sin(phi), np.cos(phi), 0],
         [0, 0, 0, 1]
     ])
-
+    """
+    функция создает матрицу гомогенного преобразования для вращения вокруг 
+    оси y на угол θ, delta[1]/180.*np.pi
+    """
     R_theta = np.array([
         [np.cos(theta), 0, -np.sin(theta), 0],
         [0, 1, 0, 0],
         [np.sin(theta), 0, np.cos(theta), 0],
         [0, 0, 0, 1]
     ])
-
+    """
+    функция создает матрицу гомогенного преобразования для вращения вокруг 
+    оси z на угол ψ, delta[2]/180.*np.pi
+    """
     R_phi = np.array([
         [np.cos(psi), -np.sin(psi), 0, 0],
         [np.sin(psi), np.cos(psi), 0, 0],
@@ -111,8 +82,17 @@ def get_pose_estimation_input(obs_view,delta):
     # Исходная поза камеры
     gt_pose_c2w=combine_3dgs_rotation_translation(obs_view.R,obs_view.T)
     # Новая поза камеры в мировой системе координат после применения заданных вращений и трансляции
-    # start_pose_c2w =  trans_t_xyz(delta[3],delta[4],delta[5]) @ rot_phi(delta[0]/180.*np.pi) @ rot_theta(delta[1]/180.*np.pi) @ rot_psi(delta[2]/180.*np.pi)  @ gt_pose_c2w
     start_pose_c2w = create_transformation_matrix(delta) @ gt_pose_c2w
+    # Создается экземпляр класса
+    """
+    start_pose_w2c: тензор PyTorch, содержащий инвертированную матрицу начальной позы камеры относительно мира (start_pose_w2c), предполагается, что это гомогенная матрица преобразования.
+    gt_pose_c2w: массив NumPy, содержащий матрицу истинной позы камеры относительно мира (gt_pose_c2w), предполагается, что это гомогенная матрица преобразования.
+    query_image: тензор PyTorch, содержащий изображение запроса (query_image).
+    FoVx: угол обзора по горизонтали (FoVx).
+    FoVy: угол обзора по вертикали (FoVy).
+    image_width: ширина изображения (image_width).
+    image_height: высота изображения (image_height).
+    """
     icomma_info = iComMa_input_info(gt_pose_c2w=gt_pose_c2w,
         start_pose_w2c=torch.from_numpy(np.linalg.inv(start_pose_c2w)).float(),
         query_image= obs_view.original_image[0:3, :, :],
@@ -122,7 +102,10 @@ def get_pose_estimation_input(obs_view,delta):
         image_height=obs_view.image_height)
     
     return icomma_info
-
+"""
+Класс iComMa_input_info является наследником NamedTuple, 
+поэтому он работает как обычный кортеж, но с доступом к своим элементам через их имена
+"""
 class iComMa_input_info(NamedTuple):
     start_pose_w2c:torch.tensor
     gt_pose_c2w:np.array
