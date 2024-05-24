@@ -27,7 +27,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     # Перемещение тензора query_image, содержащего информацию об изображении запроса
     query_image = icomma_info.query_image.cuda()
 
-    # initialize camera pose object
+    
     camera_pose = Camera_Pose(start_pose_w2c,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
                             image_width=icomma_info.image_width,image_height=icomma_info.image_height)
     camera_pose.cuda()
@@ -42,43 +42,46 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
     
     for k in range(icommaparams.pose_estimation_iter):
-
+        # Выполняется рендеринг сцены с текущей камерой
         rendering = render(camera_pose,
                            gaussians, 
                            pipeline, 
                            background,
                            compute_grad_cov2d = icommaparams.compute_grad_cov2d)#["render"]
-
+        # Если флаг matching_flag равен True (то есть модуль сопоставления не устарел)
         if matching_flag:
+            # вычисление функции потерь с помощью модели LoFTR
             loss_matching = loss_loftr(query_image,
                                        rendering,
                                        LoFTR_model,
                                        icommaparams.confidence_threshold_LoFTR,
                                        icommaparams.min_matching_points)
-            
+            # функция потерь сравнения вычисляет среднеквадратичное отклонение между текущим рендерингом и изображением
             loss_comparing = loss_mse(rendering,query_image)
             
             if loss_matching is None:
                 loss = loss_comparing
             else:  
+                # Если loss_matching меньше некоторого порога (0.001), то флаг matching_flag устанавливается в False, что означает, что модуль сопоставления становится устаревшим
                 loss = icommaparams.lambda_LoFTR *loss_matching + (1-icommaparams.lambda_LoFTR)*loss_comparing
                 if loss_matching<0.001:
                     matching_flag=False
                     
             num_iter_matching += 1
+        # если модуль сопоставления устарел, используется только функция потерь сравнения
         else:
             loss_comparing = loss_mse(rendering,query_image)
             loss = loss_comparing
-            
+            # новый learning rate для оптимизатора optimizer, который уменьшается со временем
             new_lrate = icommaparams.camera_pose_lr * (0.6 ** ((k - num_iter_matching + 1) / 50))
             for param_group in optimizer.param_groups:
                 param_group['lr'] = new_lrate
         
-        # output intermediate results
+        # вывод промежуточных результатов
         if (k + 1) % 20 == 0 or k == 0:
             print_stat(k, matching_flag, loss_matching, loss_comparing, 
                        camera_pose, gt_pose_c2w)
-            # output images
+            # выводятся промежуточные результаты, включая значения функций потерь и визуализации
             if icommaparams.OVERLAY is True:
                 with torch.no_grad():
                     rgb = rendering.clone().permute(1, 2, 0).cpu().detach().numpy()
@@ -88,11 +91,13 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     dst = cv2.addWeighted(rgb8, 0.7, ref, 0.3, 0)
                     imageio.imwrite(filename, dst)
                     imgs.append(dst)
-
+        """
+        обнуляются градиенты, вычисляются градиенты функции потерь, и производится шаг оптимизации с помощью оптимизатора
+        """
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+        # обновляется камера с использованием обновленных параметров
         camera_pose(start_pose_w2c)
 
     # output gif
