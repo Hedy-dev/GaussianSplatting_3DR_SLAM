@@ -20,7 +20,9 @@ from utils.loss_utils import loss_loftr,loss_mse
                 
 def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pipeline:PipelineParams, icommaparams:iComMaParams, icomma_info, output_path):
     # start pose & gt pose
+    # Гомогенная матрица преобразования из системы координат камеры в мировую систему координат
     gt_pose_c2w=icomma_info.gt_pose_c2w
+    # 
     start_pose_w2c=icomma_info.start_pose_w2c.cuda()
     
     # query_image for comparing 
@@ -99,21 +101,21 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
         imageio.mimwrite(os.path.join(output_path, 'video.gif'), imgs, fps=4)
   
 if __name__ == "__main__":
-
+    # Возвращает словарь со всеми перечисленными аргументами, cfg_args
     args, model, pipeline, icommaparams = get_combined_args()
-
+    # Создание директории по output_path
     makedirs(args.output_path, exist_ok=True)
     
-    # load LoFTR_model
     random.seed(0)
     np.random.seed(0)
     torch.manual_seed(0)
     torch.cuda.set_device(torch.device("cuda:0"))
 
-
+    # Загрузка модели лофтера
     LoFTR_model=load_LoFTR(icommaparams.LoFTR_ckpt_path,icommaparams.LoFTR_temp_bug_fix)
     
-    # load gaussians
+    # Загрузка гауссиан
+    # Вытаскиваем всю кучу параметров
     dataset = model.extract(args)
     gaussians = GaussianModel(dataset.sh_degree)
     bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
@@ -123,6 +125,7 @@ if __name__ == "__main__":
     # Reused 3DGS code to obtain camera information. 
     # You can customize the iComMa_input_info in practical applications.
     scene = Scene(dataset,gaussians,load_iteration=args.iteration,shuffle=False)
+    # Объект камеры, который соответствует индексу фотографии, указанному при запуске
     obs_view=scene.getTestCameras()[args.obs_img_index]
     #obs_view=scene.getTrainCameras()[args.obs_img_index]
     icomma_info=get_pose_estimation_input(obs_view,ast.literal_eval(args.delta))
