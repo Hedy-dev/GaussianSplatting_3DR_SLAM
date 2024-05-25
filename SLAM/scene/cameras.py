@@ -110,7 +110,7 @@ class Camera_Pose(nn.Module):
         # Мировая матрица + перемещение на гпу
         self.world_view_transform = self.pose_w2c.transpose(0, 1).cuda()
         # Проекционная матрица
-        self.projection_matrix = self.getProjectionMatrix(znear=self.znear, zfar=self.zfar, fovX=self.FoVx, fovY=self.FoVy).transpose(0,1).cuda()
+        self.projection_matrix = getProjectionMatrix(znear=self.znear, zfar=self.zfar, fovX=self.FoVx, fovY=self.FoVy).transpose(0,1).cuda()
         # Вычисляется полная матрицу проекции, объединяя мировую матрицу вида и проекционную матрицу
         self.full_proj_transform = (self.world_view_transform.unsqueeze(0).bmm(self.projection_matrix.unsqueeze(0))).squeeze(0)
         # Вычисляетcя положение центра камеры в мировых координатах
