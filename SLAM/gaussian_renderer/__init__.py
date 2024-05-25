@@ -14,15 +14,25 @@ import math
 from icomma_diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
-
+"""
+Функция render отвечает за рендеринг сцены с использованием модели гауссовских примитивов. Она принимает параметры камеры, 
+модель гауссовских примитивов, параметры пайплайна рендеринга, цвет фона для настройки рендеринга.
+"""
 def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None, compute_grad_cov2d=True):
     """
     Render the scene. 
     
     Background tensor (bg_color) must be on GPU!
+    viewpoint_camera: объект, представляющий камеру.
+    pc: объект класса GaussianModel, представляющий модель сцены.
+    pipe: объект, содержащий параметры пайплайна рендеринга.
+    bg_color: тензор, представляющий цвет фона.
+    scaling_modifier (по умолчанию 1.0): множитель для масштабирования.
+    override_color (по умолчанию None): цвет, который должен переопределить цвета модели.
+    compute_grad_cov2d (по умолчанию True): флаг для вычисления градиентов ковариации в 2D.
     """
  
-    # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
+    # Создание тензора нулевых значений
     screenspace_points = torch.zeros_like(pc.get_xyz, dtype=pc.get_xyz.dtype, requires_grad=True, device="cuda") + 0
     try:
         screenspace_points.retain_grad()
@@ -30,9 +40,10 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         pass
 
     # Set up rasterization configuration
+    # Вычисляются тангенсы половинных углов обзора по горизонтали и вертикали
     tanfovx = math.tan(viewpoint_camera.FoVx * 0.5)
     tanfovy = math.tan(viewpoint_camera.FoVy * 0.5)
-
+    # Создается объект GaussianRasterizationSettings, который содержит все необходимые параметры для растризации
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),
         image_width=int(viewpoint_camera.image_width),
@@ -49,15 +60,17 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         compute_grad_cov2d=compute_grad_cov2d,
         proj_k=viewpoint_camera.projection_matrix
     )
-
+    # Создание объекта растризатора
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-
+    # Получение координат, прозрачности и ковариации гауссовских примитивов
     means3D = pc.get_xyz
     means2D = screenspace_points
     opacity = pc.get_opacity
 
+    get_ply_file = pc.get_ply()
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
+    # Если необходимо, выполняется предварительное вычисление ковариаций в 3D
     scales = None
     rotations = None
     cov3D_precomp = None
@@ -67,8 +80,8 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         scales = pc.get_scaling
         rotations = pc.get_rotation
 
-    # If precomputed colors are provided, use them. Otherwise, if it is desired to precompute colors
-    # from SHs in Python, do it. If not, then SH -> RGB conversion will be done by rasterizer.
+    # Если необходимо, вычисляются цвета из сферических гармоник (SH)
+    # Определяются предварительно вычисленные цвета или переопределяются переданные цвета
     shs = None
     colors_precomp = None
     if override_color is None:
@@ -83,7 +96,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     else:
         colors_precomp = override_color
 
-    # Rasterize visible Gaussians to image, obtain their radii (on screen). 
+    # Выполнение растризации 
     rendered_image, radii = rasterizer(
         means3D = means3D,
         means2D = means2D,
@@ -102,4 +115,4 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     #         "viewspace_points": screenspace_points,
     #         "visibility_filter" : radii > 0,
     #         "radii": radii}
-    return rendered_image
+    return rendered_image, get_ply_file

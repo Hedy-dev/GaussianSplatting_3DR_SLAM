@@ -16,8 +16,8 @@ import os
 import ast
 from scene.cameras import Camera_Pose
 from utils.loss_utils import loss_loftr,loss_mse
+from utils.system_utils import mkdir_p
 
-                
 def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pipeline:PipelineParams, icommaparams:iComMaParams, icomma_info, output_path):
     # start pose & gt pose
     # Гомогенная матрица преобразования из системы координат камеры в мировую систему координат
@@ -34,8 +34,9 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
 
     # store gif elements
     imgs=[]
-    
-    matching_flag= not icommaparams.deprecate_matching
+    ply_files=[]
+
+    matching_flag= not icommaparams.deprecate_matching # Стоит ли объявлять соответствующий модуль устаревшим с самого начала True
     num_iter_matching = 0
 
     # start optimizing
@@ -43,7 +44,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
-        rendering = render(camera_pose,
+        rendering, ply_file = render(camera_pose,
                            gaussians, 
                            pipeline, 
                            background,
@@ -88,9 +89,30 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     rgb8 = to8b(rgb)
                     ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
                     filename = os.path.join(output_path, str(k)+'.png')
-                    dst = cv2.addWeighted(rgb8, 0.7, ref, 0.3, 0)
+                    dst = cv2.addWeighted(rgb8, 1.0, ref, 0.0, 0)
                     imageio.imwrite(filename, dst)
                     imgs.append(dst)
+                    #ply_files.append(ply_file) # PlyData([el])
+                    #gaussians.save_ply(filename, )
+                  
+                    mkdir_p(os.path.dirname(filename))
+
+                    #xyz = gaussians._xyz.detach().cpu().numpy()
+                    #normals = np.zeros_like(xyz)
+                    #f_dc = gaussians._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+                    #f_rest = gaussians._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+                    #opacities = gaussians._opacity.detach().cpu().numpy()
+                    #scale = gaussians._scaling.detach().cpu().numpy()
+                    #rotation = gaussians._rotation.detach().cpu().numpy()
+#
+                    #dtype_full = [(attribute, 'f4') for attribute in gaussians.construct_list_of_attributes()]
+#
+                    #elements = np.empty(xyz.shape[0], dtype=dtype_full)
+                    #attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
+                    #elements[:] = list(map(tuple, attributes))
+                    #el = PlyElement.describe(elements, 'vertex')
+
+                    ply_file.write(filename)
         """
         обнуляются градиенты, вычисляются градиенты функции потерь, и производится шаг оптимизации с помощью оптимизатора
         """

@@ -66,13 +66,13 @@ class iComMaParams(ParamGroup):
         self.OVERLAY = True
         self.camera_pose_lr = 0.05 # learning rate
         self.lambda_LoFTR = 0.8 # balance coefficient
-        self.confidence_threshold_LoFTR = 0.5 # Matching points below the threshold will be discarded.
-        self.min_matching_points = 5 # The matching module will be deprecated if there are too few detected matching points.
+        self.confidence_threshold_LoFTR = 0.5 # Совпадающие точки ниже порогового значения будут отброшены
+        self.min_matching_points = 5 # Модуль сопоставления станет устаревшим, если будет обнаружено слишком мало точек сопоставления
         self.pose_estimation_iter = 500 # количество итераций оптимизации
         self.compute_grad_cov2d = True
-        self.deprecate_matching = False # Whether to deprecate the matching module from the beginning.
+        self.deprecate_matching = False # Стоит ли объявлять соответствующий модуль устаревшим с самого начала
         self.LoFTR_ckpt_path = "LoFTR/ckpt/outdoor_ds.ckpt"
-        self.LoFTR_temp_bug_fix = False # set to False when using the old ckpt
+        self.LoFTR_temp_bug_fix = False # установите значение False при использовании старого ckpt
         super().__init__(parser, "iComMa Parameters")
 
 
