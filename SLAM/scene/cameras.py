@@ -13,7 +13,7 @@ import torch
 from torch import nn
 import numpy as np
 import math
-from utils.graphics_utils import getWorld2View2, compute_se3_to_SE3, getProjectionMatrix
+from utils.graphics_utils import getWorld2View2, se3_to_SE3, getProjectionMatrix
 
 """
 Класс Camera_Pose является подклассом nn.Module из PyTorch и 
@@ -61,7 +61,7 @@ class Camera_Pose(nn.Module):
         """
         Преобразование параметров w и v в матрицу преобразования
         """
-        deltaT=compute_se3_to_SE3(self.w,self.v)
+        deltaT=se3_to_SE3(self.w,self.v)
         """
         Обновление позы камеры, вычисляется новая поза камеры в мировых координатах. Сначала инвертируется start_pose_w2c, затем умножается на deltaT, и результат снова инвертируется
         """
