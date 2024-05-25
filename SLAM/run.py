@@ -89,7 +89,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     rgb8 = to8b(rgb)
                     ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
                     filename = os.path.join(output_path, str(k)+'.png')
-                    filename2 = os.path.join(output_path)
+                    filename2 = os.path.join(output_path, str(k)+'.ply')
                     dst = cv2.addWeighted(rgb8, 1.0, ref, 0.0, 0)
                     imageio.imwrite(filename, dst)
                     imgs.append(dst)
