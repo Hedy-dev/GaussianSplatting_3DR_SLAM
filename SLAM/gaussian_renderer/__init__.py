@@ -67,7 +67,7 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     means2D = screenspace_points
     opacity = pc.get_opacity
 
-    get_ply_file = pc.get_ply()
+    #get_ply_file = pc.get_ply()
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
     # Если необходимо, выполняется предварительное вычисление ковариаций в 3D
@@ -115,4 +115,4 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     #         "viewspace_points": screenspace_points,
     #         "visibility_filter" : radii > 0,
     #         "radii": radii}
-    return rendered_image, get_ply_file
+    return rendered_image

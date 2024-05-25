@@ -44,7 +44,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
-        rendering, ply_file = render(camera_pose,
+        rendering = render(camera_pose,
                            gaussians, 
                            pipeline, 
                            background,
@@ -113,7 +113,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     #elements[:] = list(map(tuple, attributes))
                     #el = PlyElement.describe(elements, 'vertex')
 
-                    ply_file.write(filename2)
+                    #ply_file.write(filename2)
         """
         обнуляются градиенты, вычисляются градиенты функции потерь, и производится шаг оптимизации с помощью оптимизатора
         """
