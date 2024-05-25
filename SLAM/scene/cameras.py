@@ -13,7 +13,7 @@ import torch
 from torch import nn
 import numpy as np
 import math
-from utils.graphics_utils import getWorld2View2, compute_se3_to_SE3
+from utils.graphics_utils import getWorld2View2, compute_se3_to_SE3, getProjectionMatrix
 
 """
 Класс Camera_Pose является подклассом nn.Module из PyTorch и 
@@ -74,36 +74,36 @@ class Camera_Pose(nn.Module):
     def current_campose_c2w(self):
         return self.pose_w2c.inverse().clone().cpu().detach().numpy()
     
-    def getProjectionMatrix(znear, zfar, fovX, fovY):
-        """
-        Вычисление значений для ограничивающих плоскостей проекции
-        """
-        tanHalfFovY = math.tan((fovY / 2))
-        tanHalfFovX = math.tan((fovX / 2))
+    # def getProjectionMatrix(znear, zfar, fovX, fovY):
+    #     """
+    #     Вычисление значений для ограничивающих плоскостей проекции
+    #     """
+    #     tanHalfFovY = math.tan((fovY / 2))
+    #     tanHalfFovX = math.tan((fovX / 2))
 
-        top = tanHalfFovY * znear
-        bottom = -top
-        right = tanHalfFovX * znear
-        left = -right
+    #     top = tanHalfFovY * znear
+    #     bottom = -top
+    #     right = tanHalfFovX * znear
+    #     left = -right
 
-        P = torch.zeros(4, 4)
+    #     P = torch.zeros(4, 4)
 
-        z_sign = 1.0 # если ось Z направлена к наблюдателю
-        """
-        Элементы матрицы заполняются в соответствии с формулами для матрицы проекции, которые основаны на параметрах проекции (znear, zfar, fovX, fovY):
-        Элементы P[0,0] и P[1,1] определяют масштабирование по оси X и Y, соответственно.
-        Элементы P[0,2] и P[1,2] определяют перспективное смещение.
-        Элемент P[3,2] определяет знак глубины для проекции.
-        Элементы P[2,2] и P[2,3] определяют масштабирование и смещение по оси Z.
-        """
-        P[0, 0] = 2.0 * znear / (right - left)
-        P[1, 1] = 2.0 * znear / (top - bottom)
-        P[0, 2] = (right + left) / (right - left)
-        P[1, 2] = (top + bottom) / (top - bottom)
-        P[3, 2] = z_sign
-        P[2, 2] = z_sign * zfar / (zfar - znear)
-        P[2, 3] = -(zfar * znear) / (zfar - znear)
-        return P
+    #     z_sign = 1.0 # если ось Z направлена к наблюдателю
+    #     """
+    #     Элементы матрицы заполняются в соответствии с формулами для матрицы проекции, которые основаны на параметрах проекции (znear, zfar, fovX, fovY):
+    #     Элементы P[0,0] и P[1,1] определяют масштабирование по оси X и Y, соответственно.
+    #     Элементы P[0,2] и P[1,2] определяют перспективное смещение.
+    #     Элемент P[3,2] определяет знак глубины для проекции.
+    #     Элементы P[2,2] и P[2,3] определяют масштабирование и смещение по оси Z.
+    #     """
+    #     P[0, 0] = 2.0 * znear / (right - left)
+    #     P[1, 1] = 2.0 * znear / (top - bottom)
+    #     P[0, 2] = (right + left) / (right - left)
+    #     P[1, 2] = (top + bottom) / (top - bottom)
+    #     P[3, 2] = z_sign
+    #     P[2, 2] = z_sign * zfar / (zfar - znear)
+    #     P[2, 3] = -(zfar * znear) / (zfar - znear)
+    #     return P
     
 
     def update(self):
@@ -180,37 +180,6 @@ class Camera(nn.Module):
 
         self.trans = trans
         self.scale = scale
-
-        # def getProjectionMatrix(znear, zfar, fovX, fovY):
-        #        """
-        #        Вычисление значений для ограничивающих плоскостей проекции
-        #        """
-        #        tanHalfFovY = math.tan((fovY / 2))
-        #        tanHalfFovX = math.tan((fovX / 2))
-
-        #        top = tanHalfFovY * znear
-        #        bottom = -top
-        #        right = tanHalfFovX * znear
-        #        left = -right
-
-        #        P = torch.zeros(4, 4)
-
-        #        z_sign = 1.0 # если ось Z направлена к наблюдателю
-        #        """
-        #        Элементы матрицы заполняются в соответствии с формулами для матрицы проекции, которые основаны на параметрах проекции (znear, zfar, fovX, fovY):
-        #        Элементы P[0,0] и P[1,1] определяют масштабирование по оси X и Y, соответственно.
-        #        Элементы P[0,2] и P[1,2] определяют перспективное смещение.
-        #        Элемент P[3,2] определяет знак глубины для проекции.
-        #        Элементы P[2,2] и P[2,3] определяют масштабирование и смещение по оси Z.
-        #        """
-        #        P[0, 0] = 2.0 * znear / (right - left)
-        #        P[1, 1] = 2.0 * znear / (top - bottom)
-        #        P[0, 2] = (right + left) / (right - left)
-        #        P[1, 2] = (top + bottom) / (top - bottom)
-        #        P[3, 2] = z_sign
-        #        P[2, 2] = z_sign * zfar / (zfar - znear)
-        #        P[2, 3] = -(zfar * znear) / (zfar - znear)
-        #        return P
         
         self.world_view_transform = torch.tensor(getWorld2View2(R, T, trans, scale)).transpose(0, 1).cuda()
         self.projection_matrix = getProjectionMatrix(znear=self.znear, zfar=self.zfar, fovX=self.FoVx, fovY=self.FoVy).transpose(0,1).cuda()
