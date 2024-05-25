@@ -89,13 +89,14 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     rgb8 = to8b(rgb)
                     ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
                     filename = os.path.join(output_path, str(k)+'.png')
+                    filename2 = os.path.join(output_path)
                     dst = cv2.addWeighted(rgb8, 1.0, ref, 0.0, 0)
                     imageio.imwrite(filename, dst)
                     imgs.append(dst)
                     #ply_files.append(ply_file) # PlyData([el])
                     #gaussians.save_ply(filename, )
                   
-                    mkdir_p(os.path.dirname(filename))
+                    #mkdir_p(os.path.dirname(filename))
 
                     #xyz = gaussians._xyz.detach().cpu().numpy()
                     #normals = np.zeros_like(xyz)
@@ -112,7 +113,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     #elements[:] = list(map(tuple, attributes))
                     #el = PlyElement.describe(elements, 'vertex')
 
-                    ply_file.write(filename)
+                    ply_file.write(filename2)
         """
         обнуляются градиенты, вычисляются градиенты функции потерь, и производится шаг оптимизации с помощью оптимизатора
         """
