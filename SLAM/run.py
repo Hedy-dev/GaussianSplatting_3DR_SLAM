@@ -41,7 +41,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
 
     # start optimizing
     #optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
-    optimizer = optim.AdamW(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
+    optimizer = optim.RAdam(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
         rendering = render(camera_pose,
@@ -87,9 +87,10 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                 with torch.no_grad():
                     rgb = rendering.clone().permute(1, 2, 0).cpu().detach().numpy()
                     rgb8 = to8b(rgb)
+
                     ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
                     filename = os.path.join(output_path, str(k)+'.png')
-                    filename2 = os.path.join(output_path, str(k)+'.ply')
+                    #filename2 = os.path.join(output_path, str(k)+'.ply')
                     dst = cv2.addWeighted(rgb8, 1.0, ref, 0.0, 0)
                     imageio.imwrite(filename, dst)
                     imgs.append(dst)

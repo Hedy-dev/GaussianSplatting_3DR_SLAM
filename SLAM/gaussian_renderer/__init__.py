@@ -14,6 +14,7 @@ import math
 from icomma_diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
+import numpy as np
 """
 Функция render отвечает за рендеринг сцены с использованием модели гауссовских примитивов. Она принимает параметры камеры, 
 модель гауссовских примитивов, параметры пайплайна рендеринга, цвет фона для настройки рендеринга.
@@ -95,8 +96,8 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             shs = pc.get_features
     else:
         colors_precomp = override_color
-    print("camera_center: ", viewpoint_camera.camera_center)
-    print("camera_pose: ", viewpoint_camera.world_view_transform)
+    #print("camera_center: ", viewpoint_camera.camera_center)
+    #print("camera_pose: ", viewpoint_camera.world_view_transform)
     # Выполнение растризации 
     rendered_image, radii = rasterizer(
         means3D = means3D,
@@ -116,4 +117,9 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
     #         "viewspace_points": screenspace_points,
     #         "visibility_filter" : radii > 0,
     #         "radii": radii}
+    #rendered_image_np = rendered_image.permute(1, 2, 0).cpu().detach().numpy()
+    #rendered_image_np = (rendered_image_np * 255).astype(np.uint8)
+
+    #camera_center = viewpoint_camera.camera_center.cpu().numpy()
+    #camera_pose = viewpoint_camera.world_view_transform.cpu().numpy()
     return rendered_image
