@@ -25,13 +25,14 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     # Перемещение тензора start_pose_w2c, содержащего информацию о начальной позе камеры относительно мира, на устройство CUDA (if true)
     start_pose_w2c=icomma_info.start_pose_w2c.cuda()
     # Перемещение тензора query_image, содержащего информацию об изображении запроса
+    # query_image = 
     query_image = icomma_info.query_image.cuda()
 
     
     camera_pose = Camera_Pose(start_pose_w2c,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
                             image_width=icomma_info.image_width,image_height=icomma_info.image_height)
     camera_pose.cuda()
-
+    print("start_pose_w2c: ", start_pose_w2c)
     # store gif elements
     imgs=[]
     ply_files=[]
@@ -42,9 +43,18 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     # start optimizing
     optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
     #optimizer = optim.RAdam(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
+    start_pose_w2c_r = [[5.9492171e-01,  3.0355409e-01, -7.4426007e-01,  5.2494292e+00], [2.2395043e-02,  9.1932631e-01,  3.9285806e-01, -1.2358599e+00], [8.0347174e-01, -2.5038749e-01,  5.4012907e-01, -1.6433660e+00], [-4.1564192e-09, -2.1902808e-08, -2.1574653e-08,  9.9999988e-01]]
+    camera_pose_r = Camera_Pose(start_pose_w2c_r,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
+                            image_width=icomma_info.image_width,image_height=icomma_info.image_height)
+    camera_pose_r.cuda()
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
         rendering = render(camera_pose,
+                           gaussians, 
+                           pipeline, 
+                           background,
+                           compute_grad_cov2d = icommaparams.compute_grad_cov2d)#["render"]
+        rendering2 = render(camera_pose_r,
                            gaussians, 
                            pipeline, 
                            background,
@@ -96,7 +106,15 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     imgs.append(dst)
                     #ply_files.append(ply_file) # PlyData([el])
                     #gaussians.save_ply(filename, )
-                  
+                    rgb_r = rendering2.clone().permute(1, 2, 0).cpu().detach().numpy()
+                    rgb8_r = to8b(rgb_r)
+
+                    ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
+                    filename_r = os.path.join(output_path, str(k)+'ref.png')
+                    #filename2 = os.path.join(output_path, str(k)+'.ply')
+                    dstr = cv2.addWeighted(rgb8_r, 1.0, ref, 0.0, 0)
+                    imageio.imwrite(filename_r, dstr)
+                    #imgs.append(dstr)
                     #mkdir_p(os.path.dirname(filename))
 
                     #xyz = gaussians._xyz.detach().cpu().numpy()
