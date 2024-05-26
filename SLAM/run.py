@@ -40,8 +40,8 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     num_iter_matching = 0
 
     # start optimizing
-    #optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
-    optimizer = optim.RAdam(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
+    optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
+    #optimizer = optim.RAdam(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
         rendering = render(camera_pose,
@@ -149,9 +149,7 @@ if __name__ == "__main__":
     bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-    # get camera info from Scene
-    # Reused 3DGS code to obtain camera information. 
-    # You can customize the iComMa_input_info in practical applications.
+
     scene = Scene(dataset,gaussians,load_iteration=args.iteration,shuffle=False)
     # Объект камеры, который соответствует индексу фотографии, указанному при запуске
     obs_view=scene.getTestCameras()[args.obs_img_index]
