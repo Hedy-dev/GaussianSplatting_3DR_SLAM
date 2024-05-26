@@ -40,8 +40,8 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     num_iter_matching = 0
 
     # start optimizing
-    optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
-    
+    #optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
+    optimizer = optim.AdamW(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
     for k in range(icommaparams.pose_estimation_iter):
         # Выполняется рендеринг сцены с текущей камерой
         rendering = render(camera_pose,
