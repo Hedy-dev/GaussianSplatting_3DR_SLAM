@@ -95,7 +95,8 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
             shs = pc.get_features
     else:
         colors_precomp = override_color
-
+    print("camera_center: ", viewpoint_camera.camera_center)
+    print("camera_pose: ", viewpoint_camera.world_view_transform)
     # Выполнение растризации 
     rendered_image, radii = rasterizer(
         means3D = means3D,
