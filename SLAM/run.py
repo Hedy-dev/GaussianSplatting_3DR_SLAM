@@ -31,8 +31,9 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     
     camera_pose = Camera_Pose(start_pose_w2c,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
                             image_width=icomma_info.image_width,image_height=icomma_info.image_height)
-    camera_pose.cuda()
     print("start_pose_w2c: ", start_pose_w2c)
+    camera_pose.cuda()
+    
     # store gif elements
     imgs=[]
     ply_files=[]
@@ -43,7 +44,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     # start optimizing
     optimizer = optim.Adam(camera_pose.parameters(),lr = icommaparams.camera_pose_lr)
     #optimizer = optim.RAdam(camera_pose.parameters(), lr=icommaparams.camera_pose_lr)
-    start_pose_w2c_r = [[5.9492171e-01,  3.0355409e-01, -7.4426007e-01,  5.2494292e+00], [2.2395043e-02,  9.1932631e-01,  3.9285806e-01, -1.2358599e+00], [8.0347174e-01, -2.5038749e-01,  5.4012907e-01, -1.6433660e+00], [-4.1564192e-09, -2.1902808e-08, -2.1574653e-08,  9.9999988e-01]]
+    start_pose_w2c_r = torch.tensor([[5.9492171e-01,  3.0355409e-01, -7.4426007e-01,  5.2494292e+00], [2.2395043e-02,  9.1932631e-01,  3.9285806e-01, -1.2358599e+00], [8.0347174e-01, -2.5038749e-01,  5.4012907e-01, -1.6433660e+00], [-4.1564192e-09, -2.1902808e-08, -2.1574653e-08,  9.9999988e-01]], device='cuda:0').cuda()
     camera_pose_r = Camera_Pose(start_pose_w2c_r,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
                             image_width=icomma_info.image_width,image_height=icomma_info.image_height)
     camera_pose_r.cuda()
