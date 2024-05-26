@@ -87,6 +87,7 @@ def print_stat(k, matching_flag, loss_matching, loss_comparing, camera_pose, gt_
         rot_error,translation_error=cal_campose_error(cur_pose_c2w,gt_pose_c2w)
         print('Rotation error: ', rot_error)
         print('Translation error: ', translation_error)
+        print('Cur_pose_c2w: ', cur_pose_c2w)
         print('-----------------------------------')
         
     
