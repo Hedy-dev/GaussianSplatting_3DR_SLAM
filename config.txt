@@ -1,0 +1,7 @@
+# Name of the input video file
+video_name = "playground.mp4"
+
+# Number of frames to split the video into
+frames = 200
+
+# additional parameters
