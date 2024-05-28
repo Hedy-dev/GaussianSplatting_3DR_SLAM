@@ -18,6 +18,95 @@ from scene.cameras import Camera_Pose
 from utils.loss_utils import loss_loftr,loss_mse
 from utils.system_utils import mkdir_p
 
+
+rot_psi = lambda phi: np.array([
+        [1, 0, 0, 0],
+        [0, np.cos(phi), -np.sin(phi), 0],
+        [0, np.sin(phi), np.cos(phi), 0],
+        [0, 0, 0, 1]])
+
+rot_theta = lambda th: np.array([
+        [np.cos(th), 0, -np.sin(th), 0],
+        [0, 1, 0, 0],
+        [np.sin(th), 0, np.cos(th), 0],
+        [0, 0, 0, 1]])
+
+
+# TODO: заменить на обычные, а то капец
+
+rot_phi = lambda psi: np.array([
+        [np.cos(psi), -np.sin(psi), 0, 0],
+        [np.sin(psi), np.cos(psi), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]])
+
+def trans_t_xyz(tx, ty, tz):
+    T = np.array([
+        [1, 0, 0, tx],
+        [0, 1, 0, ty],
+        [0, 0, 1, tz],
+        [0, 0, 0, 1]
+    ])
+    return T
+
+def draw_camera_in_top_camera(icomma_info, viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None, compute_grad_cov2d=True):
+    
+    # Пример матрицы start_pose_c2w
+    start_pose_c2w = torch.tensor(viewpoint_camera, dtype=torch.float32).cuda()
+    
+    # Преобразование от мира к камере B (обратная матрица к start_pose_c2w)
+    # Предположим, что это просто нихуя не тождественное преобразование
+    world_to_cameraB = torch.tensor(np.linalg.inv(
+        #np.eye(4)
+        # rot_phi - поворот вокруг оптической оси камеры
+        # rot_theta - поворот "налево"
+        # rot_psi - поворот вверх-вниз
+        trans_t_xyz(0,-10,0) @ rot_phi(0/180.*np.pi) @ rot_theta(0/180.*np.pi) @ rot_psi(-90/180.*np.pi)
+        ), dtype=torch.float32).cuda()
+    camera_pose = Camera_Pose(world_to_cameraB,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
+                            image_width=icomma_info.image_width,image_height=icomma_info.image_height)
+    camera_pose.cuda()
+    # camera_pose для камеры с видом сверху
+    camera_b_view = render(camera_pose,
+                           gaussians, 
+                           pipeline, 
+                           background,
+                           compute_grad_cov2d = icommaparams.compute_grad_cov2d)
+
+    # Положение камеры в пространстве B
+    # print(type(world_to_cameraB), type(start_pose_c2w))
+    cameraB_pose = world_to_cameraB @ start_pose_c2w
+
+    # Параметры проекции камеры B
+    # Фокусное расстояние, координаты центра изображения, коэффициенты искажения и т. д.
+    # Предположим, что они известны
+    focal_length = 200 
+
+    image_center = torch.tensor(np.array([camera_b_view.shape[1] / 2, camera_b_view.shape[2] / 2]), dtype=torch.float32).cuda()  # Пример координат центра изображения
+    distortion_coeffs = np.zeros(5)  # Пример коэффициентов искажения
+
+    # Преобразование координат камеры в пространстве B в координаты на изображении
+    # Это может быть выполнено с использованием функции проекции, например, функции cv2.projectPoints в OpenCV
+    # Здесь просто приведен пример для наглядности
+    camera_coordinates_B = cameraB_pose[:3, 3]
+    image_coordinates_B = (focal_length * camera_coordinates_B[:2] / camera_coordinates_B[2]) + image_center
+
+    # print("Координаты камеры на изображении с камеры B:", image_coordinates_B)
+    # print("camera_b_view = ", camera_b_view.shape)
+    # rgb = camera_b_view.clone().permute(1, 2, 0).cpu().detach().numpy()
+    # rgb8 = to8b(rgb)
+    # filename = os.path.join('rendering.png')
+    # imageio.imwrite(filename, rgb8)
+    image_coordinates_B_cort = image_coordinates_B.clone().cpu().detach().numpy()
+    image_coordinates_B_cort = (int(image_coordinates_B_cort[0]), int(image_coordinates_B_cort[1]))
+    # return_image = to8b(camera_b_view.clone().permute(2, 1, 0).cpu().detach().numpy().astype(np.uint8))
+    # return_image = return_image.copy()
+    # print('test_image_smth shape = ', test_image_smth.shape, type(test_image_smth))
+    # return_image = cv2.circle(return_image, cam_centre, 5, (0,255,0), thickness=1, lineType=8, shift=0)
+    return  image_coordinates_B_cort
+    #return_image,
+
+
 def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pipeline:PipelineParams, icommaparams:iComMaParams, icomma_info, output_path):
     # start pose & gt pose
     # Гомогенная матрица преобразования из системы координат камеры в мировую систему координат
@@ -31,9 +120,12 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
     
     camera_pose = Camera_Pose(start_pose_w2c,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
                             image_width=icomma_info.image_width,image_height=icomma_info.image_height)
-    print("start_pose_w2c: ", start_pose_w2c)
+    #print("start_pose_w2c: ", start_pose_w2c)
     camera_pose.cuda()
-    
+    ## Настройки
+    camera_poses_sequence = []
+
+
     # store gif elements
     imgs=[]
     ply_files=[]
@@ -93,6 +185,18 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
         if (k + 1) % 20 == 0 or k == 0:
             print_stat(k, matching_flag, loss_matching, loss_comparing, 
                        camera_pose, gt_pose_c2w)
+                        # output images
+            matrix_pose_c2w_to_top_camera = camera_pose.current_campose_c2w()
+            current_camera_pose = draw_camera_in_top_camera(icomma_info, matrix_pose_c2w_to_top_camera, gaussians, 
+                           pipeline, 
+                           background,
+                           compute_grad_cov2d = icommaparams.compute_grad_cov2d)
+            # a
+            camera_poses_sequence.append(current_camera_pose)
+            # camera_b_view_query.append(a)
+            # print(a)
+            print("current_campose_c2w = ", matrix_pose_c2w_to_top_camera)
+
             # выводятся промежуточные результаты, включая значения функций потерь и визуализации
             if icommaparams.OVERLAY is True:
                 with torch.no_grad():
@@ -114,7 +218,7 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
                     filename_r = os.path.join(output_path, str(k)+'ref.png')
                     #filename2 = os.path.join(output_path, str(k)+'.ply')
                     dstr = cv2.addWeighted(rgb8_r, 1.0, ref, 0.0, 0)
-                    imageio.imwrite(filename_r, dstr)
+                    #imageio.imwrite(filename_r, dstr)
                     #imgs.append(dstr)
                     #mkdir_p(os.path.dirname(filename))
 
@@ -142,10 +246,31 @@ def camera_pose_estimation(gaussians:GaussianModel, background:torch.tensor, pip
         optimizer.step()
         # обновляется камера с использованием обновленных параметров
         camera_pose(start_pose_w2c)
-
+    world_to_cameraB = torch.tensor(np.linalg.inv(
+            #np.eye(4)
+            # rot_phi - поворот вокруг оптической оси камеры
+            # rot_theta - поворот "налево"
+            # rot_psi - поворот вверх-вниз
+            trans_t_xyz(0,-10,0) @ rot_phi(0/180.*np.pi) @ rot_theta(0/180.*np.pi) @ rot_psi(-90/180.*np.pi)
+            ), dtype=torch.float32).cuda()
+    camera_pose = Camera_Pose(world_to_cameraB,FoVx=icomma_info.FoVx,FoVy=icomma_info.FoVy,
+                                image_width=icomma_info.image_width,image_height=icomma_info.image_height)
+    camera_b_view = to8b(render(camera_pose,
+                               gaussians, 
+                               pipeline, 
+                               background,
+                               compute_grad_cov2d = icommaparams.compute_grad_cov2d).clone().permute(1, 2, 0).cpu().detach().numpy())
+        # return_image = to8b(camera_b_view.clone().permute(2, 1, 0).cpu().detach().numpy().astype(np.uint8))
+    camera_b_view = camera_b_view.copy()
+    for camera_poses_point in camera_poses_sequence:
+        cv2.circle(camera_b_view, camera_poses_point, 5, (0,255,0), thickness=1, lineType=8, shift=0)
+    cv2.imwrite('camera_path.png', camera_b_view)
     # output gif
     if icommaparams.OVERLAY is True:
         imageio.mimwrite(os.path.join(output_path, 'video.gif'), imgs, fps=4)
+        ref = to8b(query_image.permute(1, 2, 0).cpu().detach().numpy())
+        filename = os.path.join('ref.png')
+        imageio.imwrite(filename, ref)
   
 if __name__ == "__main__":
     # Возвращает словарь со всеми перечисленными аргументами, cfg_args
