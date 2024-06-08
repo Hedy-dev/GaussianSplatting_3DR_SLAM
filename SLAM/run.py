@@ -32,7 +32,7 @@ rot_theta = lambda th: np.array([
         [0, 0, 0, 1]])
 
 
-# TODO: заменить на обычные, а то капец
+# TODO: заменить на обычные
 
 rot_phi = lambda psi: np.array([
         [np.cos(psi), -np.sin(psi), 0, 0],
@@ -55,7 +55,7 @@ def draw_camera_in_top_camera(icomma_info, viewpoint_camera, pc : GaussianModel,
     start_pose_c2w = torch.tensor(viewpoint_camera, dtype=torch.float32).cuda()
     
     # Преобразование от мира к камере B (обратная матрица к start_pose_c2w)
-    # Предположим, что это просто нихуя не тождественное преобразование
+    # Предположим, что это не тождественное преобразование
     world_to_cameraB = torch.tensor(np.linalg.inv(
         #np.eye(4)
         # rot_phi - поворот вокруг оптической оси камеры
