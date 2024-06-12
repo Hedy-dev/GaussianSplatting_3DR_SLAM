@@ -7,7 +7,8 @@ This repository contains implementations of Gaussian Splatting for 3D reconstruc
 Что подходит для CUDA 12.0 и выше.
 Для обучения модели можно использовать приложенный colab. Обучение на GPU Tesla T4 занимает 58 минут. После заврешения обучения папку с сохраненными чекпоинтами надо скачивать, на данный момент визуализаци и адаптивный просмотр сцены находятся в разработке. Также в работе находится реализация автоматического сравнения с аналогами для упрощения оценочной части.
 3d_reconstraction
-Исходные датасеты и результат обучения будут размещаться в следующей папке https://drive.google.com/drive/folders/1d-tfXUtZhvQ9Aye_yC4MYuc-IwaClLve?usp=sharing 
-=======
+Исходные датасеты и результат обучения будут размещаться в следующей папке https://drive.google.com/drive/folders/1d-tfXUtZhvQ9Aye_yC4MYuc-IwaClLve?usp=sharing   
+# Демонстрация результатов
+![Демонстрация работы](https://drive.google.com/file/d/1nrrBoOKLelo5Z6KootpIKiokxSJzyjcr/view?usp=sharing)
 # Текущая структура репозитория
 Все, что связанно с 3D реконструкцией размещается в ветке 3D_reconstraction, а с SLAM в ветке slam
