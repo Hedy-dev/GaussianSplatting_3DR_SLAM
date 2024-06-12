@@ -9,13 +9,13 @@ This repository contains implementations of Gaussian Splatting for 3D reconstruc
 3d_reconstraction
 Исходные датасеты и результат обучения будут размещаться в следующей папке https://drive.google.com/drive/folders/1d-tfXUtZhvQ9Aye_yC4MYuc-IwaClLve?usp=sharing   
 # Демонстрация результатов
-Реконструкция помещений
-![Демонстрация работы](images/lamp.gif)
-Реконструкция открытых пространств
-![Демонстрация работы](images/garden.gif)
-Интерактивный рендеринг
-![Демонстрация работы](images/gaussians.gif)
-Работа SLAM
-![Демонстрация работы](images/slam.gif)
+Реконструкция помещений  
+![Демонстрация работы](images/lamp.gif)  
+Реконструкция открытых пространств  
+![Демонстрация работы](images/garden.gif)  
+Интерактивный рендеринг  
+![Демонстрация работы](images/gaussians.gif)  
+Работа SLAM  
+![Демонстрация работы](images/slam.gif)  
 # Текущая структура репозитория
 Все, что связанно с 3D реконструкцией размещается в ветке 3D_reconstraction, а с SLAM в ветке slam
