@@ -93,7 +93,7 @@ def get_pose_estimation_input(obs_view,delta):
     image_width: ширина изображения (image_width).
     image_height: высота изображения (image_height).
     """
-    icomma_info = iComMa_input_info(gt_pose_c2w=gt_pose_c2w,
+    input_info_resived = cameras_data_input_info(gt_pose_c2w=gt_pose_c2w,
         start_pose_w2c=torch.from_numpy(np.linalg.inv(start_pose_c2w)).float(),
         query_image= obs_view.original_image[0:3, :, :],
         FoVx=obs_view.FoVx,
@@ -101,12 +101,12 @@ def get_pose_estimation_input(obs_view,delta):
         image_width=obs_view.image_width,
         image_height=obs_view.image_height)
     
-    return icomma_info
+    return input_info_resived
 """
-Класс iComMa_input_info является наследником NamedTuple, 
+Класс cameras_data_input_info является наследником NamedTuple, 
 поэтому он работает как обычный кортеж, но с доступом к своим элементам через их имена
 """
-class iComMa_input_info(NamedTuple):
+class cameras_data_input_info(NamedTuple):
     start_pose_w2c:torch.tensor
     gt_pose_c2w:np.array
     query_image:torch.tensor

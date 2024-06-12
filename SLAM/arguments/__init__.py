@@ -61,7 +61,7 @@ class ModelParams(ParamGroup):
         g.source_path = os.path.abspath(g.source_path)
         return g
 
-class iComMaParams(ParamGroup):
+class GlobalParams(ParamGroup):
     def __init__(self, parser):
         self.OVERLAY = True
         self.camera_pose_lr = 0.05 # learning rate
@@ -73,7 +73,7 @@ class iComMaParams(ParamGroup):
         self.deprecate_matching = False # Стоит ли объявлять соответствующий модуль устаревшим с самого начала
         self.LoFTR_ckpt_path = "LoFTR/ckpt/outdoor_ds.ckpt"
         self.LoFTR_temp_bug_fix = False # установите значение False при использовании старого ckpt
-        super().__init__(parser, "iComMa Parameters")
+        super().__init__(parser, "Global Parameters")
 
 
 class PipelineParams(ParamGroup):
@@ -108,7 +108,7 @@ def get_combined_args(): # parser : ArgumentParser):
     parser = ArgumentParser(description="Camera pose estimation parameters")
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
-    icommaparams = iComMaParams(parser)
+    globalparams = GlobalParams(parser)
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--output_path", default='output', type=str,help="output path")
     parser.add_argument("--obs_img_index", default=0, type=int)
@@ -133,4 +133,4 @@ def get_combined_args(): # parser : ArgumentParser):
     for k,v in vars(args_cmdline).items():
         if v != None:
             merged_dict[k] = v
-    return Namespace(**merged_dict), model, pipeline, icommaparams
+    return Namespace(**merged_dict), model, pipeline, globalparams
