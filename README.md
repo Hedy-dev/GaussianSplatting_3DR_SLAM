@@ -17,5 +17,9 @@ This repository contains implementations of Gaussian Splatting for 3D reconstruc
 ![Демонстрация работы](images/gaussians.gif)  
 Работа SLAM  
 ![Демонстрация работы](images/slam.gif)  
-# Текущая структура репозитория
-Все, что связанно с 3D реконструкцией размещается в ветке 3D_reconstraction, а с SLAM в ветке slam
+# Ссылка на блокнот GS_simple с демонстрацией результатов  
+https://colab.research.google.com/drive/1Mniel_Td-MI9Uwo6hBuwYdYHHlE6-PuB?usp=drive_link  
+# Результаты на Hugging Face  
+* https://huggingface.co/spaces/xeniadev/LetiViewer
+* https://huggingface.co/spaces/DrDrew/LetiViewer
+
